@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;900&display=swap');
         body { font-family: 'Segoe UI', sans-serif; background-color: #f3f6f9; padding-bottom: 100px; color: #1e3a8a; }
@@ -113,7 +114,7 @@
     let DATA_SESION = [];
     let html5QrCode = null;
     let tempArt = null;
-    let ubicacionValidada = ""; // Almacena el Concatenado validado
+    let ubicacionValidada = ""; 
     
     // Configuración de Voz
     const synth = window.speechSynthesis;
@@ -149,38 +150,25 @@
                 const data = new Uint8Array(e.target.result);
                 const wb = XLSX.read(data, {type: 'array'});
                 
-                // 1. Cargar Artículos
                 const sheetArt = wb.Sheets["articulos"];
                 if(sheetArt) {
                     const rowsArt = XLSX.utils.sheet_to_json(sheetArt);
                     MAESTRA_ARTICULOS = {};
                     rowsArt.forEach(r => {
                         let ean = String(r["EAN Unidad"] || "").trim();
-                        if(ean) {
-                            MAESTRA_ARTICULOS[ean] = {
-                                codigo: r["Codigo"],
-                                nombre: r["Nombre"],
-                                unixbul: parseFloat(r["UnixBul"]) || 1
-                            };
-                        }
+                        if(ean) MAESTRA_ARTICULOS[ean] = { codigo: r["Codigo"], nombre: r["Nombre"], unixbul: parseFloat(r["UnixBul"]) || 1 };
                     });
                 } else {
                     throw new Error("Falta la pestaña 'articulos'");
                 }
 
-                // 2. Cargar Ubicaciones
                 const sheetUbi = wb.Sheets["ubicaciones"];
                 if(sheetUbi) {
                     const rowsUbi = XLSX.utils.sheet_to_json(sheetUbi);
                     MAESTRA_UBICACIONES = {};
                     rowsUbi.forEach(r => {
                         let cdb = String(r["CDB"] || "").trim();
-                        if(cdb) {
-                            MAESTRA_UBICACIONES[cdb] = {
-                                area: r["Area"],
-                                concatenado: r["Concatenena"] || r["Concatenado"] || cdb // Por si cambia mínimamente el nombre
-                            };
-                        }
+                        if(cdb) MAESTRA_UBICACIONES[cdb] = { area: r["Area"], concatenado: r["Concatenena"] || r["Concatenado"] || cdb };
                     });
                 } else {
                     throw new Error("Falta la pestaña 'ubicaciones'");
@@ -195,7 +183,6 @@
         reader.readAsArrayBuffer(file);
     }
 
-    // --- ESCÁNER DE CÁMARA ---
     function abrirEscaner(modo) {
         document.getElementById('scanner-wrapper').classList.remove('hidden');
         document.getElementById('scanner-label').innerText = modo === 'ubicacion' ? 'Escanear Ubicación (CDB)' : 'Escanear Artículo (EAN)';
@@ -227,7 +214,6 @@
         }
     }
 
-    // --- PROCESAMIENTO MANUAL ---
     function buscarUbicacionManual() {
         let val = document.getElementById('input-ubicacion').value.trim();
         if(val) procesarUbicacion(val);
@@ -248,26 +234,36 @@
         if(ubi) {
             beep(1200);
             ubicacionValidada = ubi.concatenado;
-            inputUbi.value = ubi.concatenado; // Muestra el concatenado al usuario
+            inputUbi.value = ubi.concatenado; 
             inputUbi.classList.add('ubicacion-activa');
             statusUbi.innerHTML = `✅ Ubicación validada (Área: ${ubi.area || '-'})`;
             statusUbi.classList.remove('text-gray-400', 'text-red-500');
             statusUbi.classList.add('text-green-600');
-            
-            // Habilita sección artículos
             seccionArticulo.classList.remove('opacity-50', 'pointer-events-none');
             hablar("Ubicación " + ubi.concatenado);
         } else {
             beep(300);
+            
+            // Lógica para agregar ubicación no existente
+            if(confirm(`La ubicación "${codigo}" no existe en la base. ¿Deseas ingresarla manualmente?`)) {
+                let nuevaUbi = prompt("Ingresá el nombre/código de la ubicación:");
+                if(nuevaUbi && nuevaUbi.trim() !== "") {
+                    MAESTRA_UBICACIONES[codigo] = {
+                        area: "MANUAL",
+                        concatenado: nuevaUbi.trim().toUpperCase()
+                    };
+                    return procesarUbicacion(codigo); // Re-procesar para validar
+                } else {
+                    hablar("Ingreso cancelado");
+                }
+            }
+
             ubicacionValidada = "";
             inputUbi.classList.remove('ubicacion-activa');
             statusUbi.innerHTML = "❌ Código de ubicación no encontrado.";
             statusUbi.classList.remove('text-gray-400', 'text-green-600');
             statusUbi.classList.add('text-red-500');
-            
-            // Bloquea sección artículos
             seccionArticulo.classList.add('opacity-50', 'pointer-events-none');
-            hablar("Ubicación incorrecta");
             inputUbi.value = "";
             inputUbi.focus();
         }
@@ -287,12 +283,31 @@
             document.getElementById('art-codigo').innerText = art.codigo;
             document.getElementById('art-unixbul').innerText = `1 BULTO = ${art.unixbul} UNIDADES`;
             document.getElementById('input-cantidad').value = "1";
-            document.getElementById('tipo-bul').checked = true; // Bulto por defecto
+            document.getElementById('tipo-bul').checked = true; 
             
             document.getElementById('panel-conteo').classList.remove('hidden');
             hablar(art.nombre);
         } else {
             beep(300);
+            
+            // Lógica para agregar artículo no existente
+            if(confirm(`El código de barras "${ean}" no existe. ¿Deseas ingresarlo manualmente?`)) {
+                let nuevoCod = prompt("PASO 1/2: Ingresá el CÓDIGO del artículo:");
+                if(nuevoCod && nuevoCod.trim() !== "") {
+                    let nuevaDesc = prompt("PASO 2/2: Ingresá la DESCRIPCIÓN del artículo:");
+                    if(nuevaDesc && nuevaDesc.trim() !== "") {
+                        MAESTRA_ARTICULOS[ean] = {
+                            codigo: nuevoCod.trim().toUpperCase(),
+                            nombre: nuevaDesc.trim().toUpperCase(),
+                            unixbul: 1 // Por defecto le ponemos 1
+                        };
+                        return procesarArticulo(ean); // Re-procesar para abrir el conteo
+                    }
+                }
+                hablar("Ingreso cancelado");
+                return;
+            }
+
             hablar("Artículo no encontrado");
             alert(`El EAN ${ean} no existe en la base de artículos.`);
         }
@@ -311,11 +326,9 @@
         if(!ubicacionValidada) return alert("Falta validar la ubicación.");
         if(!tempArt || isNaN(cant) || cant <= 0) return alert("Cantidad inválida.");
 
-        // Cálculo de totales
         let totalUnidades = tipo === 'bulto' ? (cant * tempArt.unixbul) : cant;
         let totalBultos = tipo === 'bulto' ? cant : (cant / tempArt.unixbul);
 
-        // Guardar en array de sesión
         DATA_SESION.unshift({
             "Ubicación": ubicacionValidada,
             "Código Art": tempArt.codigo,
@@ -346,7 +359,7 @@
                         <span class="font-black text-blue-900 text-xs">${d["Descripción"]}</span>
                     </div>
                     <div class="text-right pl-2">
-                        <span class="block font-black text-green-600 text-lg">${d["Cantidad Bultos"]} <span class="text-[9px] text-gray-400">CA</span></span>
+                        <span class="block font-black text-green-600 text-lg">${d["Cantidad Unidades"]} <span class="text-[9px] text-gray-400">UN</span></span>
                     </div>
                 </div>
             </div>
@@ -360,18 +373,56 @@
         }
     }
 
-    function exportarExcel() {
+    // --- EXPORTAR A EXCEL (CON FORMATO) ---
+    async function exportarExcel() {
         if(DATA_SESION.length === 0) return alert("No hay datos para exportar.");
-        const ws = XLSX.utils.json_to_sheet(DATA_SESION);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Conteo");
         
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Conteo');
+        
+        // Estructura de columnas
+        worksheet.columns = [
+            { header: 'Ubicación', key: 'Ubicación', width: 20 },
+            { header: 'Código Art', key: 'Código Art', width: 15 },
+            { header: 'Descripción', key: 'Descripción', width: 45 },
+            { header: 'Cantidad Bultos', key: 'Cantidad Bultos', width: 15 },
+            { header: 'Cantidad Unidades', key: 'Cantidad Unidades', width: 15 },
+            { header: 'Fecha/Hora', key: 'Fecha/Hora', width: 22 }
+        ];
+
+        // Agregar datos
+        worksheet.addRows(DATA_SESION);
+
+        // Dar formato a la fila de encabezados (Gris y Negrita)
+        worksheet.getRow(1).eachCell((cell) => {
+            cell.font = { bold: true, color: { argb: 'FF000000' } };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFDDDDDD' } // Gris claro
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+
+        // Crear nombre del archivo
         const fecha = new Date();
-        const strFecha = `${fecha.getDate()}-${fecha.getMonth()+1}-${fecha.getFullYear()}_${fecha.getHours()}${fecha.getMinutes()}`;
-        XLSX.writeFile(wb, `Inventario_${strFecha}.xlsx`);
+        const d = String(fecha.getDate()).padStart(2, '0');
+        const m = String(fecha.getMonth() + 1).padStart(2, '0');
+        const y = fecha.getFullYear();
+        const strFecha = `${d}-${m}-${y}`;
+        const fileName = `Inventario_Vitalcan_${strFecha}.xlsx`;
+
+        // Generar descarga
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        window.URL.revokeObjectURL(url);
     }
 
-    // --- COMANDOS DE VOZ ---
     function alternarVoz() {
         if(!recognition) return alert("Tu navegador no soporta reconocimiento de voz.");
         const btn = document.getElementById('mic-btn');
@@ -387,11 +438,8 @@
     if(recognition) {
         recognition.onresult = (e) => {
             let t = e.results[0][0].transcript.toLowerCase();
-            
-            // Si el panel de conteo está abierto, escuchamos cantidades
             if(!document.getElementById('panel-conteo').classList.contains('hidden')) {
                 let num = t.match(/\d+/);
-                
                 if(t.includes("bulto") || t.includes("caja")) {
                     document.getElementById('tipo-bul').checked = true;
                     if(num) document.getElementById('input-cantidad').value = num[0];
