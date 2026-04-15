@@ -1,436 +1,419 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inventario AMBALOG - Vitalcan</title>
-    
-     <link rel="icon" type="image/png" href="/Penaflor/qrautoestiba/icon-512x512.png">
-    <link rel="shortcut icon" href="/Penaflor/qrautoestiba/favicon-32x32.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/Penaflor/qrautoestiba/apple-icon-180x180.png">
-    <link rel="manifest" href="/Penaflor/qrautoestiba/manifest.json">
-    <meta name="theme-color" content="#1e3a5f">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap');
-body { font-family: 'Segoe UI', sans-serif; background-color: #f3f6f9; color: #1e3a8a; padding-bottom: 120px; }
-.aza-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 1.5rem; margin-bottom: 1.2rem; border: 1px solid #e5e7eb; }
-.btn-cargar-planilla { background-color: #23395d; color: white; font-weight: bold; width: 100%; padding: 14px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase; font-size: 0.9rem; }
-.input-archivo-excel { border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; width: 100%; font-size: 0.85rem; margin-bottom: 12px; background: #fff; }
-.btn-scan { background-color: #3b82f6; color: white; font-weight: 800; border-radius: 10px; transition: 0.3s; }
-.btn-scan:hover { background-color: #2563eb; }
-.btn-scan-rojo { background-color: #ef4444; color: white; font-weight: 800; border-radius: 10px; transition: 0.3s; }
-.mic-float { position: fixed; bottom: 25px; right: 25px; width: 70px; height: 70px; background-color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(59,130,246,0.6); cursor: pointer; z-index: 100; border: 3px solid white; }
-.mic-float.listening { background-color: #ef4444; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-.input-manual-border { border: 2px solid #d1d5db; border-radius: 10px; padding: 12px; width: 100%; text-align: center; font-weight: bold; font-size: 1.1rem; color: #1e3a8a; }
-.radio-toolbar input[type="radio"] { display: none; }
-.radio-toolbar label { display: inline-block; background-color: #e5e7eb; padding: 10px 20px; font-size: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; color: #4b5563; border: 2px solid transparent; width: 48%; text-align: center; }
-.radio-toolbar input[type="radio"]:checked + label { background-color: #dcfce7; border-color: #16a34a; color: #16a34a; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR INVENTARIO - Control Total</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;900&display=swap');
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f3f6f9; padding-bottom: 100px; color: #1e3a8a; }
+        .aza-card { background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); padding: 1.5rem; margin-bottom: 1rem; border: 1px solid #e5e7eb; }
+        .btn-primary { background-color: #1e3a8a; color: white; font-weight: 800; width: 100%; padding: 14px; border-radius: 8px; transition: 0.2s; text-transform: uppercase; }
+        .btn-primary:active { transform: scale(0.98); }
+        .input-manual { border: 2px solid #d1d5db; border-radius: 8px; padding: 12px; width: 100%; text-align: center; font-weight: bold; color: #1e3a8a; outline: none; }
+        .input-manual:focus { border-color: #3b82f6; }
+        .mic-float { position: fixed; bottom: 20px; right: 20px; width: 65px; height: 65px; background-color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(59,130,246,0.5); z-index: 100; border: 3px solid white; cursor: pointer; }
+        .listening { background-color: #ef4444; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .ubicacion-activa { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #16a34a !important; }
+    </style>
 </head>
 <body class="p-4 max-w-lg mx-auto">
 
-<header class="text-center mb-6 mt-4">
-    <h1 class="text-2xl font-black text-[#1e3a8a]">QR INVENTARIO <span class="text-blue-600">PRO</span></h1>
-    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-widest italic">Ubicaciones y Bultos</p>
+<header class="text-center mb-6 mt-2">
+    <h1 class="text-2xl font-black text-[#1e3a8a] uppercase tracking-tight">Inventario <span class="text-blue-500">PRO</span></h1>
+    <p class="text-[11px] text-gray-500 font-bold tracking-widest uppercase mt-1">Módulo Artículos y Ubicaciones</p>
 </header>
 
 <div class="aza-card">
-    <label class="text-[11px] font-bold text-[#1e3a8a] block mb-3 uppercase tracking-tight">Cargar Excel Base</label>
-    <input type="file" id="upload-excel" accept=".xlsx, .xls" class="input-archivo-excel">
-    <button onclick="importarExcel()" class="btn-cargar-planilla"><span>📂</span> CARGAR PLANILLA</button>
+    <label class="text-[11px] font-bold text-gray-500 block mb-2 uppercase tracking-wide">Archivo Maestro (Excel)</label>
+    <input type="file" id="upload-excel" accept=".xlsx, .xls" class="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-3 cursor-pointer">
+    <button onclick="importarExcel()" class="btn-primary flex justify-center items-center gap-2">
+        <span>📂</span> CARGAR BASES
+    </button>
 </div>
 
-<div id="scanner-wrapper" class="hidden aza-card border-4 border-blue-400">
-    <div class="flex justify-between items-center mb-2">
-        <span id="scanner-title" class="text-sm font-black text-blue-600 uppercase">Escaneando...</span>
-        <button onclick="cerrarEscaner()" class="text-red-500 font-bold text-sm uppercase">Cerrar ❌</button>
-    </div>
-    <div id="scanner-container" class="rounded-xl overflow-hidden"><div id="reader"></div></div>
-</div>
-
-<div class="aza-card border-l-4 border-indigo-500">
-    <label class="text-[11px] font-bold text-indigo-500 block mb-2 uppercase">1. Ubicación de Conteo</label>
+<div class="aza-card border-l-4 border-orange-500">
+    <label class="text-[11px] font-bold text-orange-600 block mb-2 uppercase tracking-wide">Paso 1: Ubicación (CDB)</label>
     <div class="flex gap-2">
-        <input type="text" id="ubicacion-manual" placeholder="Escaneá o tipeá ubicación..." class="input-manual-border !text-left !text-sm">
-        <button onclick="abrirEscaner('ubicacion')" class="btn-scan px-4 flex items-center justify-center shadow-md">📷</button>
+        <input type="text" id="input-ubicacion" placeholder="Escanear o tipear CDB..." class="input-manual text-sm">
+        <button onclick="buscarUbicacionManual()" class="bg-orange-100 text-orange-700 px-4 rounded-lg font-black border-2 border-orange-200">OK</button>
+        <button onclick="abrirEscaner('ubicacion')" class="bg-gray-800 text-white px-4 rounded-lg shadow-md">📷</button>
     </div>
-    <p class="text-[10px] text-gray-400 mt-2 italic">Se usará esta ubicación para los próximos artículos.</p>
+    <p id="ubi-status" class="text-[10px] text-gray-400 mt-2 font-bold italic">Esperando ubicación válida...</p>
 </div>
 
-<div class="aza-card border-l-4 border-blue-500">
-    <label class="text-[11px] font-bold text-blue-500 block mb-2 uppercase">2. Artículo (CDB)</label>
-    <div class="flex gap-2 mb-2">
-        <input type="text" id="cdb-manual" placeholder="Código de Barras" class="input-manual-border">
-        <button onclick="buscarManual()" class="bg-blue-100 text-blue-700 px-5 rounded-xl font-black text-sm border-2 border-blue-200 uppercase">OK</button>
+<div class="aza-card border-l-4 border-blue-500 opacity-50 pointer-events-none transition-opacity duration-300" id="seccion-articulo">
+    <label class="text-[11px] font-bold text-blue-600 block mb-2 uppercase tracking-wide">Paso 2: Artículo (EAN)</label>
+    <div class="flex gap-2 mb-3">
+        <input type="text" id="input-ean" placeholder="Código de barras..." class="input-manual">
+        <button onclick="buscarArticuloManual()" class="bg-blue-100 text-blue-700 px-4 rounded-lg font-black border-2 border-blue-200">OK</button>
     </div>
-    <button onclick="abrirEscaner('articulo')" class="w-full btn-scan py-3 flex items-center justify-center gap-3 shadow-lg text-sm text-center uppercase">📷 Escanear Artículo</button>
+    <button onclick="abrirEscaner('articulo')" class="w-full bg-blue-600 text-white py-4 rounded-lg font-black text-sm uppercase shadow-lg flex justify-center items-center gap-2">
+        📷 Escanear Artículo
+    </button>
 </div>
 
-<div id="panel-control" class="aza-card hidden border-4 border-green-400 bg-green-50">
-    <div class="text-center">
-        <span id="display-desc" class="text-xs font-bold text-gray-500 uppercase block mb-1">---</span>
-        <span id="display-sku" class="text-3xl font-black text-blue-800 block mb-2 tracking-tighter">SKU: ---</span>
-        <span id="display-uxc" class="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded-full mb-4 inline-block">1 Bulto = 1 Unidad</span>
+<div id="scanner-wrapper" class="hidden fixed inset-0 bg-black z-[200] flex flex-col">
+    <div class="p-4 flex justify-between items-center text-white bg-gray-900">
+        <span id="scanner-label" class="font-bold uppercase tracking-wider text-sm text-blue-400">Escaneando...</span>
+        <button onclick="cerrarEscaner()" class="bg-red-500 text-white font-bold px-4 py-2 rounded-lg text-xs uppercase">Cancelar ❌</button>
+    </div>
+    <div id="reader" class="w-full flex-1 bg-black"></div>
+</div>
+
+<div id="panel-conteo" class="aza-card hidden border-4 border-green-400 bg-green-50 shadow-2xl relative">
+    <button onclick="cerrarPanelConteo()" class="absolute top-2 right-2 text-red-500 font-black p-2 text-xs uppercase">❌ Cancelar</button>
+    <div class="text-center mt-4">
+        <span id="art-nombre" class="text-xs font-bold text-gray-500 uppercase block leading-tight px-4 mb-2">---</span>
+        <span id="art-codigo" class="text-3xl font-black text-blue-900 block mb-1 tracking-tighter">---</span>
+        <span id="art-unixbul" class="text-[10px] font-bold bg-blue-100 text-blue-800 px-3 py-1 rounded-full mb-4 inline-block uppercase">1 Bulto = 1 Unidad</span>
         
-        <div class="bg-white p-4 rounded-2xl shadow-inner">
-            <label class="text-[11px] font-bold text-gray-600 uppercase block mb-3">Tipo de ingreso:</label>
-            
-            <div class="radio-toolbar flex justify-between mb-4">
-                <input type="radio" id="radio-bulto" name="tipo_ingreso" value="bulto" checked>
-                <label for="radio-bulto">📦 BULTOS</label>
-
-                <input type="radio" id="radio-unidad" name="tipo_ingreso" value="unidad">
-                <label for="radio-unidad">🎲 UNIDADES</label>
+        <div class="bg-white p-4 rounded-2xl shadow-inner mt-2">
+            <div class="flex justify-center gap-2 mb-4">
+                <div class="w-1/2">
+                    <input type="radio" id="tipo-bul" name="tipo_ingreso" value="bulto" checked class="hidden peer">
+                    <label for="tipo-bul" class="w-full py-3 bg-gray-50 border-2 border-gray-200 rounded-lg peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-700 font-black cursor-pointer block text-xs uppercase transition-all">📦 Bultos</label>
+                </div>
+                <div class="w-1/2">
+                    <input type="radio" id="tipo-un" name="tipo_ingreso" value="unidad" class="hidden peer">
+                    <label for="tipo-un" class="w-full py-3 bg-gray-50 border-2 border-gray-200 rounded-lg peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-700 font-black cursor-pointer block text-xs uppercase transition-all">🎲 Unidades</label>
+                </div>
             </div>
 
-            <span class="text-[10px] font-bold text-green-600 uppercase block mb-2">Cantidad Contada</span>
-            <input type="number" id="cant-manual" value="1" class="text-5xl font-black text-center text-green-700 w-full outline-none bg-transparent mb-4">
+            <span class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Cantidad Contada</span>
+            <input type="number" id="input-cantidad" value="1" class="text-5xl font-black text-center text-green-700 w-full bg-transparent border-b-4 border-green-200 outline-none mb-4 pb-2">
             
-            <button onclick="registrarFinal()" class="w-full bg-green-600 text-white py-4 rounded-xl font-black text-lg shadow-lg uppercase">✅ Registrar</button>
+            <button onclick="registrar()" class="w-full bg-green-600 text-white py-4 rounded-xl font-black shadow-lg text-lg uppercase transition-all active:scale-95">✅ Registrar</button>
         </div>
-        <button onclick="resetPanel()" class="mt-4 text-[11px] font-bold text-red-500 uppercase tracking-widest">❌ Cancelar Artículo</button>
     </div>
 </div>
 
 <div class="aza-card">
     <div class="flex justify-between items-center mb-4 border-b pb-2">
-        <span class="text-[11px] font-bold text-gray-400 uppercase">Últimos Registros</span>
-        <span id="counter" class="text-xs font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">0 ITEMS</span>
+        <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Últimos Registros</span>
+        <span id="counter" class="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">0 ITEMS</span>
     </div>
-    <div id="history" class="space-y-2 max-h-48 overflow-y-auto"></div>
-    <button onclick="exportarExcel()" class="w-full mt-6 bg-green-700 text-white py-4 rounded-xl font-black text-sm shadow-xl uppercase">📥 Descargar Inventario Excel</button>
+    <div id="history" class="space-y-3 max-h-48 overflow-y-auto mb-4 px-1"></div>
+    <button onclick="exportarExcel()" class="w-full bg-gray-800 text-white py-4 rounded-xl font-black text-sm shadow-xl uppercase flex justify-center items-center gap-2">
+        📥 Descargar Inventario
+    </button>
 </div>
 
-<div id="mic-btn" class="mic-float" onclick="activarVoz()">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-    </svg>
+<div id="mic-btn" class="mic-float" onclick="alternarVoz()">
+    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
 </div>
 
 <script>
-let MAESTRA = JSON.parse(localStorage.getItem("MAESTRA")) || {};
-let STOCK_LEGACY = [];
-let DATA_SESION = [];
-let html5QrCode = null;
-let tempItem = null;
-let lastScanTime = 0;
-let modoEscaner = "articulo"; // puede ser "ubicacion" o "articulo"
-const SCAN_INTERVAL = 3000; 
-const synth = window.speechSynthesis;
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-
-if(recognition) {
-    recognition.lang = 'es-ES';
-    // Mantiene escuchando para mayor fluidez
-    recognition.continuous = false; 
-}
-
-function hablar(texto) {
-    synth.cancel();
-    const utter = new SpeechSynthesisUtterance(texto);
-    utter.lang = 'es-ES';
-    synth.speak(utter);
-}
-
-function importarExcel() {
-    const fileInput = document.getElementById('upload-excel');
-    const file = fileInput.files[0];
-    if(!file) return alert("Selecciona un archivo primero.");
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-
-            const hojaD = workbook.SheetNames.find(n => n.trim().toLowerCase() === "datos");
-            const hojaL = workbook.SheetNames.find(n => n.trim().toLowerCase() === "legacy vstockpt");
-
-            if(!hojaD) throw new Error("No se encontró la pestaña 'Datos'.");
-
-            const wsD = workbook.Sheets[hojaD];
-            const rowsD = XLSX.utils.sheet_to_json(wsD);
-            MAESTRA = {};
-
-            rowsD.forEach(r => {
-                const cleanedRow = {};
-                Object.keys(r).forEach(key => cleanedRow[key.trim().toUpperCase()] = r[key]);
-                let cdb = String(cleanedRow["CDB"] || "").trim();
-                if(cdb) cdb = String(parseInt(cdb)); // normalizamos
-                if(cdb) {
-                    MAESTRA[cdb] = {
-                        sku: cleanedRow["ART."] || cleanedRow["SKU"],
-                        desc: cleanedRow["DESCRIPCION"],
-                        uxc: parseInt(cleanedRow["UNIDADES X CAJA"] || cleanedRow["UXC"] || 1)
-                    };
-                }
-            });
-
-            if(hojaL) {
-                const wsL = workbook.Sheets[hojaL];
-                STOCK_LEGACY = XLSX.utils.sheet_to_json(wsL);
-            }
-
-            localStorage.setItem("MAESTRA", JSON.stringify(MAESTRA));
-            hablar("Planilla lista");
-            alert("Cargados " + Object.keys(MAESTRA).length + " códigos.");
-        } catch(err) {
-            alert("Error al procesar: " + err.message);
-        }
-    };
-    reader.readAsArrayBuffer(file);
-}
-
-function abrirEscaner(modo) {
-    modoEscaner = modo;
-    const wrapper = document.getElementById('scanner-wrapper');
-    const title = document.getElementById('scanner-title');
+    let MAESTRA_ARTICULOS = {};
+    let MAESTRA_UBICACIONES = {};
+    let DATA_SESION = [];
+    let html5QrCode = null;
+    let tempArt = null;
+    let ubicacionValidada = ""; // Almacena el Concatenado validado
     
-    title.innerText = modo === 'ubicacion' ? 'Escanear Ubicación' : 'Escanear Artículo';
-    wrapper.classList.remove('hidden');
+    // Configuración de Voz
+    const synth = window.speechSynthesis;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    if(recognition) recognition.lang = 'es-ES';
 
-    if(!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: 250 },
-            (text) => {
-                const now = Date.now();
-                if(now - lastScanTime < SCAN_INTERVAL) return;
-                lastScanTime = now;
-
-                beep();
-                const scannedText = text.trim();
-
-                if (modoEscaner === "ubicacion") {
-                    document.getElementById('ubicacion-manual').value = scannedText;
-                    hablar("Ubicación " + scannedText);
-                    cerrarEscaner(); // Cierra tras leer ubicación
-                } else {
-                    const normalizedCDB = String(parseInt(scannedText));
-                    procesarDato(normalizedCDB);
-                }
-            }
-        );
-    }
-}
-
-function cerrarEscaner() {
-    const wrapper = document.getElementById('scanner-wrapper');
-    if(html5QrCode) {
-        html5QrCode.stop().then(() => { 
-            html5QrCode = null; 
-            wrapper.classList.add('hidden'); 
-        });
-    } else {
-        wrapper.classList.add('hidden');
-    }
-}
-
-function beep() {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioCtx.createOscillator();
-    oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
-    oscillator.connect(audioCtx.destination);
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + 0.1);
-}
-
-function buscarManual() {
-    const val = document.getElementById('cdb-manual').value.trim();
-    if(!val) return;
-    beep();
-    const normalizedCDB = String(parseInt(val));
-    procesarDato(normalizedCDB);
-}
-
-function procesarDato(cdb) {
-    // Validar ubicación antes de proceder
-    const ubi = document.getElementById('ubicacion-manual').value.trim();
-    if(!ubi) {
-        hablar("Por favor ingrese la ubicación");
-        alert("¡Alto! Debes escanear o escribir una UBICACIÓN antes de procesar artículos.");
-        document.getElementById('ubicacion-manual').focus();
-        return;
+    function hablar(texto) { 
+        synth.cancel(); 
+        let u = new SpeechSynthesisUtterance(texto); 
+        u.lang = 'es-ES'; 
+        synth.speak(u); 
     }
 
-    let item = MAESTRA[cdb];
-    if(!item) {
-        hablar("No encontrado");
-        if(confirm("Código no existe en Datos. ¿Desea registrarlo?")) {
-            const sku = prompt("Ingrese SKU:");
-            if(!sku) return;
-            const desc = prompt("Ingrese Descripción:");
-            const uxc = prompt("¿Cuántas unidades trae 1 bulto/caja?", "1");
-            MAESTRA[cdb] = { sku, desc, uxc: parseInt(uxc) || 1 };
-            localStorage.setItem("MAESTRA", JSON.stringify(MAESTRA));
-            alert("Producto agregado.");
-            item = MAESTRA[cdb];
-        } else return;
+    function beep(frecuencia = 1000) {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(frecuencia, audioCtx.currentTime);
+        oscillator.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
     }
 
-    tempItem = item;
-    document.getElementById('display-sku').innerText = `SKU: ${item.sku}`;
-    document.getElementById('display-desc').innerText = item.desc;
-    document.getElementById('display-uxc').innerText = `1 BULTO = ${item.uxc} UNIDADES`;
-    
-    document.getElementById('panel-control').classList.remove('hidden');
-    document.getElementById('cdb-manual').value = "";
-    document.getElementById('cant-manual').value = "1";
-    document.getElementById('radio-bulto').checked = true; // Por defecto bultos
-
-    // Leer el artículo para confirmación de audio
-    hablar("Ese Ka U " + String(item.sku).split('').join(' '));
-}
-
-function registrarFinal() {
-    const ubi = document.getElementById('ubicacion-manual').value.trim();
-    const cant = parseInt(document.getElementById('cant-manual').value);
-    const tipoIngreso = document.querySelector('input[name="tipo_ingreso"]:checked').value;
-    
-    if(!tempItem || isNaN(cant) || !ubi) return;
-
-    let cantUnidades = 0;
-    let cantBultos = 0;
-
-    // Lógica Matemática (Bultos vs Unidades)
-    if(tipoIngreso === "bulto") {
-        cantBultos = cant;
-        cantUnidades = cant * tempItem.uxc;
-    } else {
-        cantUnidades = cant;
-        cantBultos = (cant / tempItem.uxc).toFixed(2).replace(".", ",");
-    }
-
-    // Buscar si hay lote en legacy
-    const loteRow = STOCK_LEGACY.find(f => 
-        String(f['SKU'] || f['articulo'] || '').trim() === String(tempItem.sku).trim() &&
-        String(f['TIPO'] || '').trim().toUpperCase() === "PICK"
-    );
-
-    DATA_SESION.unshift({
-        Ubicacion: ubi.toUpperCase(),
-        SKU: tempItem.sku,
-        Descripción: tempItem.desc,
-        "Lote/ serie": loteRow ? loteRow['Lote'] : "SIN LOTE",
-        Cantidad_UN: cantUnidades,
-        UN: "UN",
-        Cantidad_CA: cantBultos,
-        CA: "CA"
-    });
-
-    actualizarHistorial();
-    hablar("Registrado");
-    resetPanel();
-}
-
-function resetPanel() {
-    document.getElementById('panel-control').classList.add('hidden');
-    document.getElementById('cdb-manual').value = "";
-    document.getElementById('cant-manual').value = "1";
-    tempItem = null;
-}
-
-function actualizarHistorial() {
-    document.getElementById('counter').innerText = `${DATA_SESION.length} ITEMS`;
-    document.getElementById('history').innerHTML = DATA_SESION.map((d,i) => `
-        <div class="flex flex-col bg-gray-50 p-3 rounded-lg border-l-4 border-indigo-500 mb-2">
-            <div class="flex justify-between items-start mb-1">
-                <span class="text-[10px] font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">📍 ${d.Ubicacion}</span>
-                <button onclick="anularLinea(${i})" class="text-red-500 text-xs font-bold">❌ Anular</button>
-            </div>
-            <div class="flex justify-between items-center">
-                <div class="flex-1">
-                    <span class="text-xs font-bold text-gray-400 block">${d.SKU}</span>
-                    <span class="text-sm font-black text-blue-900 leading-tight">${d.Descripción}</span>
-                </div>
-                <div class="text-right ml-2 border-l pl-2">
-                    <div class="text-lg font-black text-green-700">${d.Cantidad_CA} <span class="text-[9px] text-gray-500">CA</span></div>
-                    <div class="text-sm font-bold text-blue-600">${d.Cantidad_UN} <span class="text-[9px] text-gray-500">UN</span></div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function anularLinea(index) {
-    if(confirm("¿Desea anular esta línea?")) {
-        DATA_SESION.splice(index,1);
-        actualizarHistorial();
-    }
-}
-
-function exportarExcel() {
-    if(DATA_SESION.length === 0) return alert("No hay datos para exportar.");
-    const ws = XLSX.utils.json_to_sheet(DATA_SESION);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Inventario");
-    
-    // Nombre del archivo con fecha para mejor control
-    const date = new Date();
-    const fechaStr = `${date.getDate()}-${date.getMonth()+1}-${date.getFullYear()}`;
-    XLSX.writeFile(wb, `Inventario_${fechaStr}.xlsx`);
-}
-
-function activarVoz() {
-    if(recognition) {
-        document.getElementById('mic-btn').classList.add('listening');
-        try {
-            recognition.start();
-        } catch(e) {
-            console.log("El micrófono ya estaba escuchando.");
-        }
-    } else {
-        alert("Tu navegador no soporta reconocimiento de voz.");
-    }
-}
-
-if(recognition) {
-    recognition.onresult = (event) => {
-        const text = event.results[0][0].transcript.toLowerCase();
+    // --- CARGA DE EXCEL ---
+    function importarExcel() {
+        const file = document.getElementById('upload-excel').files[0];
+        if(!file) return alert("Por favor, selecciona un archivo Excel primero.");
         
-        // Comandos para cantidades específicas
-        if(text.includes("bulto") || text.includes("bultos") || text.includes("caja") || text.includes("cajas")) {
-            const n = text.replace(/[^0-9]/g,'');
-            if(n) {
-                document.getElementById('radio-bulto').checked = true;
-                document.getElementById('cant-manual').value = n;
-                hablar(n + " bultos");
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, {type: 'array'});
+                
+                // 1. Cargar Artículos
+                const sheetArt = wb.Sheets["articulos"];
+                if(sheetArt) {
+                    const rowsArt = XLSX.utils.sheet_to_json(sheetArt);
+                    MAESTRA_ARTICULOS = {};
+                    rowsArt.forEach(r => {
+                        let ean = String(r["EAN Unidad"] || "").trim();
+                        if(ean) {
+                            MAESTRA_ARTICULOS[ean] = {
+                                codigo: r["Codigo"],
+                                nombre: r["Nombre"],
+                                unixbul: parseFloat(r["UnixBul"]) || 1
+                            };
+                        }
+                    });
+                } else {
+                    throw new Error("Falta la pestaña 'articulos'");
+                }
+
+                // 2. Cargar Ubicaciones
+                const sheetUbi = wb.Sheets["ubicaciones"];
+                if(sheetUbi) {
+                    const rowsUbi = XLSX.utils.sheet_to_json(sheetUbi);
+                    MAESTRA_UBICACIONES = {};
+                    rowsUbi.forEach(r => {
+                        let cdb = String(r["CDB"] || "").trim();
+                        if(cdb) {
+                            MAESTRA_UBICACIONES[cdb] = {
+                                area: r["Area"],
+                                concatenado: r["Concatenena"] || r["Concatenado"] || cdb // Por si cambia mínimamente el nombre
+                            };
+                        }
+                    });
+                } else {
+                    throw new Error("Falta la pestaña 'ubicaciones'");
+                }
+
+                hablar("Bases cargadas correctamente");
+                alert(`¡Éxito!\nSe cargaron:\n- ${Object.keys(MAESTRA_ARTICULOS).length} Artículos\n- ${Object.keys(MAESTRA_UBICACIONES).length} Ubicaciones`);
+            } catch (err) {
+                alert("Error al procesar el Excel: " + err.message);
             }
-        } 
-        else if(text.includes("unidad") || text.includes("unidades")) {
-            const n = text.replace(/[^0-9]/g,'');
-            if(n) {
-                document.getElementById('radio-unidad').checked = true;
-                document.getElementById('cant-manual').value = n;
-                hablar(n + " unidades");
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // --- ESCÁNER DE CÁMARA ---
+    function abrirEscaner(modo) {
+        document.getElementById('scanner-wrapper').classList.remove('hidden');
+        document.getElementById('scanner-label').innerText = modo === 'ubicacion' ? 'Escanear Ubicación (CDB)' : 'Escanear Artículo (EAN)';
+        document.getElementById('scanner-label').className = modo === 'ubicacion' ? 'font-bold uppercase tracking-wider text-sm text-orange-400' : 'font-bold uppercase tracking-wider text-sm text-blue-400';
+        
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+            const codigoEscaneado = text.trim();
+            cerrarEscaner();
+            
+            if(modo === 'ubicacion') {
+                document.getElementById('input-ubicacion').value = codigoEscaneado;
+                procesarUbicacion(codigoEscaneado);
+            } else {
+                document.getElementById('input-ean').value = codigoEscaneado;
+                procesarArticulo(codigoEscaneado);
             }
+        });
+    }
+
+    function cerrarEscaner() {
+        if(html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('scanner-wrapper').classList.add('hidden');
+                html5QrCode = null;
+            });
+        } else {
+            document.getElementById('scanner-wrapper').classList.add('hidden');
         }
-        else if(text.includes("cantidad")) {
-            const n = text.replace(/[^0-9]/g,'');
-            if(n) {
-                document.getElementById('cant-manual').value = n;
-                hablar("Cantidad " + n);
-            }
-        } 
-        else if(text.includes("ok") || text.includes("registrado") || text.includes("guardar")) {
-            registrarFinal();
+    }
+
+    // --- PROCESAMIENTO MANUAL ---
+    function buscarUbicacionManual() {
+        let val = document.getElementById('input-ubicacion').value.trim();
+        if(val) procesarUbicacion(val);
+    }
+
+    function buscarArticuloManual() {
+        let val = document.getElementById('input-ean').value.trim();
+        if(val) procesarArticulo(val);
+    }
+
+    // --- LÓGICA DE NEGOCIO ---
+    function procesarUbicacion(codigo) {
+        let ubi = MAESTRA_UBICACIONES[codigo];
+        let inputUbi = document.getElementById('input-ubicacion');
+        let statusUbi = document.getElementById('ubi-status');
+        let seccionArticulo = document.getElementById('seccion-articulo');
+
+        if(ubi) {
+            beep(1200);
+            ubicacionValidada = ubi.concatenado;
+            inputUbi.value = ubi.concatenado; // Muestra el concatenado al usuario
+            inputUbi.classList.add('ubicacion-activa');
+            statusUbi.innerHTML = `✅ Ubicación validada (Área: ${ubi.area || '-'})`;
+            statusUbi.classList.remove('text-gray-400', 'text-red-500');
+            statusUbi.classList.add('text-green-600');
+            
+            // Habilita sección artículos
+            seccionArticulo.classList.remove('opacity-50', 'pointer-events-none');
+            hablar("Ubicación " + ubi.concatenado);
+        } else {
+            beep(300);
+            ubicacionValidada = "";
+            inputUbi.classList.remove('ubicacion-activa');
+            statusUbi.innerHTML = "❌ Código de ubicación no encontrado.";
+            statusUbi.classList.remove('text-gray-400', 'text-green-600');
+            statusUbi.classList.add('text-red-500');
+            
+            // Bloquea sección artículos
+            seccionArticulo.classList.add('opacity-50', 'pointer-events-none');
+            hablar("Ubicación incorrecta");
+            inputUbi.value = "";
+            inputUbi.focus();
         }
-    };
-    recognition.onend = () => document.getElementById('mic-btn').classList.remove('listening');
-    recognition.onerror = (e) => {
-        console.log("Error de voz:", e.error);
-        document.getElementById('mic-btn').classList.remove('listening');
-    };
-}
+    }
+
+    function procesarArticulo(ean) {
+        if(!ubicacionValidada) {
+            alert("Primero debes validar una ubicación.");
+            return;
+        }
+
+        let art = MAESTRA_ARTICULOS[ean];
+        if(art) {
+            beep(1500);
+            tempArt = art;
+            document.getElementById('art-nombre').innerText = art.nombre;
+            document.getElementById('art-codigo').innerText = art.codigo;
+            document.getElementById('art-unixbul').innerText = `1 BULTO = ${art.unixbul} UNIDADES`;
+            document.getElementById('input-cantidad').value = "1";
+            document.getElementById('tipo-bul').checked = true; // Bulto por defecto
+            
+            document.getElementById('panel-conteo').classList.remove('hidden');
+            hablar(art.nombre);
+        } else {
+            beep(300);
+            hablar("Artículo no encontrado");
+            alert(`El EAN ${ean} no existe en la base de artículos.`);
+        }
+    }
+
+    function cerrarPanelConteo() {
+        document.getElementById('panel-conteo').classList.add('hidden');
+        document.getElementById('input-ean').value = "";
+        tempArt = null;
+    }
+
+    function registrar() {
+        let cant = parseFloat(document.getElementById('input-cantidad').value);
+        let tipo = document.querySelector('input[name="tipo_ingreso"]:checked').value;
+        
+        if(!ubicacionValidada) return alert("Falta validar la ubicación.");
+        if(!tempArt || isNaN(cant) || cant <= 0) return alert("Cantidad inválida.");
+
+        // Cálculo de totales
+        let totalUnidades = tipo === 'bulto' ? (cant * tempArt.unixbul) : cant;
+        let totalBultos = tipo === 'bulto' ? cant : (cant / tempArt.unixbul);
+
+        // Guardar en array de sesión
+        DATA_SESION.unshift({
+            "Ubicación": ubicacionValidada,
+            "Código Art": tempArt.codigo,
+            "Descripción": tempArt.nombre,
+            "Cantidad Bultos": totalBultos.toFixed(2).replace('.',','),
+            "Cantidad Unidades": totalUnidades,
+            "Fecha/Hora": new Date().toLocaleString()
+        });
+
+        actualizarHistorial();
+        hablar("Registrado");
+        cerrarPanelConteo();
+    }
+
+    function actualizarHistorial() {
+        document.getElementById('counter').innerText = `${DATA_SESION.length} ITEMS`;
+        const container = document.getElementById('history');
+        
+        container.innerHTML = DATA_SESION.map((d, i) => `
+            <div class="flex flex-col bg-white p-3 rounded-lg border-l-4 border-green-500 shadow-sm text-sm">
+                <div class="flex justify-between border-b pb-1 mb-1">
+                    <span class="font-bold text-gray-500 text-[10px] uppercase">📍 ${d["Ubicación"]}</span>
+                    <button onclick="anularRegistro(${i})" class="text-red-500 font-bold text-[10px] uppercase">Anular</button>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="leading-tight">
+                        <span class="text-[10px] font-bold text-gray-400 block">${d["Código Art"]}</span>
+                        <span class="font-black text-blue-900 text-xs">${d["Descripción"]}</span>
+                    </div>
+                    <div class="text-right pl-2">
+                        <span class="block font-black text-green-600 text-lg">${d["Cantidad Bultos"]} <span class="text-[9px] text-gray-400">CA</span></span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function anularRegistro(index) {
+        if(confirm("¿Seguro que querés anular este registro?")) {
+            DATA_SESION.splice(index, 1);
+            actualizarHistorial();
+        }
+    }
+
+    function exportarExcel() {
+        if(DATA_SESION.length === 0) return alert("No hay datos para exportar.");
+        const ws = XLSX.utils.json_to_sheet(DATA_SESION);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Conteo");
+        
+        const fecha = new Date();
+        const strFecha = `${fecha.getDate()}-${fecha.getMonth()+1}-${fecha.getFullYear()}_${fecha.getHours()}${fecha.getMinutes()}`;
+        XLSX.writeFile(wb, `Inventario_${strFecha}.xlsx`);
+    }
+
+    // --- COMANDOS DE VOZ ---
+    function alternarVoz() {
+        if(!recognition) return alert("Tu navegador no soporta reconocimiento de voz.");
+        const btn = document.getElementById('mic-btn');
+        
+        if(btn.classList.contains('listening')) {
+            recognition.stop();
+        } else {
+            btn.classList.add('listening');
+            recognition.start();
+        }
+    }
+
+    if(recognition) {
+        recognition.onresult = (e) => {
+            let t = e.results[0][0].transcript.toLowerCase();
+            
+            // Si el panel de conteo está abierto, escuchamos cantidades
+            if(!document.getElementById('panel-conteo').classList.contains('hidden')) {
+                let num = t.match(/\d+/);
+                
+                if(t.includes("bulto") || t.includes("caja")) {
+                    document.getElementById('tipo-bul').checked = true;
+                    if(num) document.getElementById('input-cantidad').value = num[0];
+                    hablar((num ? num[0] : "") + " bultos");
+                } 
+                else if(t.includes("unidad")) {
+                    document.getElementById('tipo-un').checked = true;
+                    if(num) document.getElementById('input-cantidad').value = num[0];
+                    hablar((num ? num[0] : "") + " unidades");
+                }
+                else if(num) {
+                    document.getElementById('input-cantidad').value = num[0];
+                }
+
+                if(t.includes("registrar") || t.includes("ok") || t.includes("confirmar") || t.includes("guardar")) {
+                    registrar();
+                }
+            }
+        };
+        recognition.onend = () => document.getElementById('mic-btn').classList.remove('listening');
+        recognition.onerror = () => document.getElementById('mic-btn').classList.remove('listening');
+    }
 </script>
 </body>
 </html>
