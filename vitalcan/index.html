@@ -160,7 +160,6 @@
                         
                         let dataArt = { codigo: cod, nombre: r["Nombre"], unixbul: parseFloat(r["UnixBul"]) || 1 };
                         
-                        // Guardamos ambos identificadores para permitir búsqueda mixta (EAN o Código)
                         if(ean) MAESTRA_ARTICULOS[ean] = dataArt;
                         if(cod) MAESTRA_ARTICULOS[cod] = dataArt;
                     });
@@ -290,7 +289,7 @@
             document.getElementById('art-codigo').innerText = art.codigo;
             document.getElementById('art-unixbul').innerText = `1 BULTO = ${art.unixbul} UNIDADES`;
             document.getElementById('input-cantidad').value = "1";
-            document.getElementById('tipo-un').checked = true; // Setear UNIDADES por defecto
+            document.getElementById('tipo-un').checked = true;
             
             document.getElementById('panel-conteo').classList.remove('hidden');
             hablar(art.nombre);
@@ -307,7 +306,6 @@
                             nombre: nuevaDesc.trim().toUpperCase(),
                             unixbul: 1 
                         };
-                        // Guardamos tanto el que tipeó al inicio como el nuevo código final (por las dudas)
                         MAESTRA_ARTICULOS[codigoBuscado] = nuevoObjeto;
                         MAESTRA_ARTICULOS[nuevoCod.trim().toUpperCase()] = nuevoObjeto;
                         return procesarArticulo(codigoBuscado); 
@@ -341,7 +339,8 @@
             "Ubicación": ubicacionValidada,
             "Código Art": tempArt.codigo,
             "Descripción": tempArt.nombre,
-            "Cantidad Bultos": totalBultos.toFixed(2).replace('.',','),
+            // AHORA SE GUARDA COMO NÚMERO (parseFloat), NO COMO STRING PARA QUE EXCEL LO TOME BIEN
+            "Cantidad Bultos": parseFloat(totalBultos.toFixed(2)),
             "Cantidad Unidades": totalUnidades,
             "Fecha/Hora": new Date().toLocaleString()
         });
@@ -381,7 +380,7 @@
         }
     }
 
-    // --- EXPORTAR A EXCEL (CON FORMATO) ---
+    // --- EXPORTAR A EXCEL (CON FORMATO Y TOTALES) ---
     async function exportarExcel() {
         if(DATA_SESION.length === 0) return alert("No hay datos para exportar.");
         
@@ -399,6 +398,7 @@
 
         worksheet.addRows(DATA_SESION);
 
+        // Estilos de la cabecera
         worksheet.getRow(1).eachCell((cell) => {
             cell.font = { bold: true, color: { argb: 'FF000000' } };
             cell.fill = {
@@ -408,6 +408,28 @@
             };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
         });
+
+        // Habilitar AutoFiltro para que se pueda filtrar por artículo
+        worksheet.autoFilter = `A1:F${DATA_SESION.length + 1}`;
+
+        // Determinar en qué fila van los totales (después del último dato)
+        const totalRowIdx = DATA_SESION.length + 2;
+
+        // Escribir la fila de Totales
+        worksheet.getCell(`C${totalRowIdx}`).value = "TOTALES VISIBLES:";
+        worksheet.getCell(`C${totalRowIdx}`).font = { bold: true, size: 12 };
+        worksheet.getCell(`C${totalRowIdx}`).alignment = { horizontal: 'right' };
+
+        // Usamos SUBTOTAL(109, rango) para que sume solo las filas que queden tras un filtro
+        worksheet.getCell(`D${totalRowIdx}`).value = { formula: `SUBTOTAL(109, D2:D${totalRowIdx - 1})` };
+        worksheet.getCell(`D${totalRowIdx}`).font = { bold: true, color: { argb: 'FF16A34A' } }; // Verde
+        
+        worksheet.getCell(`E${totalRowIdx}`).value = { formula: `SUBTOTAL(109, E2:E${totalRowIdx - 1})` };
+        worksheet.getCell(`E${totalRowIdx}`).font = { bold: true, color: { argb: 'FF16A34A' } }; // Verde
+
+        // Aplicar formato de número a las columnas para que Excel las reconozca nativamente
+        worksheet.getColumn('D').numFmt = '#,##0.00'; // Bultos (con 2 decimales)
+        worksheet.getColumn('E').numFmt = '#,##0';    // Unidades (entero)
 
         const fecha = new Date();
         const d = String(fecha.getDate()).padStart(2, '0');
@@ -443,13 +465,13 @@
         recognition.onresult = (e) => {
             let t = e.results[0][0].transcript.toLowerCase();
             if(!document.getElementById('panel-conteo').classList.contains('hidden')) {
-                let num = t.match(/\d+/); // Extrae el número del dictado
+                let num = t.match(/\d+/); 
                 
                 if(t.includes("bulto") || t.includes("caja")) {
                     document.getElementById('tipo-bul').checked = true;
                     if(num) {
                         document.getElementById('input-cantidad').value = num[0];
-                        hablar(num[0] + " bultos"); // Repite cantidad y unidad
+                        hablar(num[0] + " bultos"); 
                     } else {
                         hablar("Bultos seleccionados");
                     }
@@ -458,14 +480,14 @@
                     document.getElementById('tipo-un').checked = true;
                     if(num) {
                         document.getElementById('input-cantidad').value = num[0];
-                        hablar(num[0] + " unidades"); // Repite cantidad y unidad
+                        hablar(num[0] + " unidades"); 
                     } else {
                         hablar("Unidades seleccionadas");
                     }
                 }
                 else if(num) {
                     document.getElementById('input-cantidad').value = num[0];
-                    hablar(num[0]); // REPITE SOLO EL NÚMERO COMO CONFIRMACIÓN
+                    hablar(num[0]); 
                 }
 
                 if(t.includes("registrar") || t.includes("ok") || t.includes("confirmar") || t.includes("guardar")) {
