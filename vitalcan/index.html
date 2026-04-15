@@ -292,7 +292,8 @@
             document.getElementById('tipo-un').checked = true;
             
             document.getElementById('panel-conteo').classList.remove('hidden');
-            hablar(art.nombre);
+            // MODIFICACIÓN: Ahora dicta el código en lugar del nombre
+            hablar(art.codigo);
         } else {
             beep(300);
             
@@ -339,7 +340,6 @@
             "Ubicación": ubicacionValidada,
             "Código Art": tempArt.codigo,
             "Descripción": tempArt.nombre,
-            // AHORA SE GUARDA COMO NÚMERO (parseFloat), NO COMO STRING PARA QUE EXCEL LO TOME BIEN
             "Cantidad Bultos": parseFloat(totalBultos.toFixed(2)),
             "Cantidad Unidades": totalUnidades,
             "Fecha/Hora": new Date().toLocaleString()
@@ -380,7 +380,7 @@
         }
     }
 
-    // --- EXPORTAR A EXCEL (CON FORMATO Y TOTALES) ---
+    // --- EXPORTAR A EXCEL ---
     async function exportarExcel() {
         if(DATA_SESION.length === 0) return alert("No hay datos para exportar.");
         
@@ -398,7 +398,6 @@
 
         worksheet.addRows(DATA_SESION);
 
-        // Estilos de la cabecera
         worksheet.getRow(1).eachCell((cell) => {
             cell.font = { bold: true, color: { argb: 'FF000000' } };
             cell.fill = {
@@ -409,27 +408,21 @@
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
         });
 
-        // Habilitar AutoFiltro para que se pueda filtrar por artículo
         worksheet.autoFilter = `A1:F${DATA_SESION.length + 1}`;
-
-        // Determinar en qué fila van los totales (después del último dato)
         const totalRowIdx = DATA_SESION.length + 2;
 
-        // Escribir la fila de Totales
         worksheet.getCell(`C${totalRowIdx}`).value = "TOTALES VISIBLES:";
         worksheet.getCell(`C${totalRowIdx}`).font = { bold: true, size: 12 };
         worksheet.getCell(`C${totalRowIdx}`).alignment = { horizontal: 'right' };
 
-        // Usamos SUBTOTAL(109, rango) para que sume solo las filas que queden tras un filtro
         worksheet.getCell(`D${totalRowIdx}`).value = { formula: `SUBTOTAL(109, D2:D${totalRowIdx - 1})` };
-        worksheet.getCell(`D${totalRowIdx}`).font = { bold: true, color: { argb: 'FF16A34A' } }; // Verde
+        worksheet.getCell(`D${totalRowIdx}`).font = { bold: true, color: { argb: 'FF16A34A' } };
         
         worksheet.getCell(`E${totalRowIdx}`).value = { formula: `SUBTOTAL(109, E2:E${totalRowIdx - 1})` };
-        worksheet.getCell(`E${totalRowIdx}`).font = { bold: true, color: { argb: 'FF16A34A' } }; // Verde
+        worksheet.getCell(`E${totalRowIdx}`).font = { bold: true, color: { argb: 'FF16A34A' } };
 
-        // Aplicar formato de número a las columnas para que Excel las reconozca nativamente
-        worksheet.getColumn('D').numFmt = '#,##0.00'; // Bultos (con 2 decimales)
-        worksheet.getColumn('E').numFmt = '#,##0';    // Unidades (entero)
+        worksheet.getColumn('D').numFmt = '#,##0.00';
+        worksheet.getColumn('E').numFmt = '#,##0';
 
         const fecha = new Date();
         const d = String(fecha.getDate()).padStart(2, '0');
@@ -448,7 +441,7 @@
         window.URL.revokeObjectURL(url);
     }
 
-    // --- COMANDOS DE VOZ MEJORADOS ---
+    // --- COMANDOS DE VOZ ---
     function alternarVoz() {
         if(!recognition) return alert("Tu navegador no soporta reconocimiento de voz.");
         const btn = document.getElementById('mic-btn');
