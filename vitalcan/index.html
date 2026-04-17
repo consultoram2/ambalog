@@ -507,6 +507,18 @@
         recognition.onend = () => document.getElementById('mic-btn').classList.remove('listening');
         recognition.onerror = () => document.getElementById('mic-btn').classList.remove('listening');
     }
+
+    // --- PROTECCIÓN CONTRA CIERRE/ACTUALIZACIÓN ACCIDENTAL ---
+    // Agregamos un listener al evento beforeunload. 
+    // Solo advierte al usuario si hay datos guardados en DATA_SESION.
+    window.addEventListener('beforeunload', function (e) {
+        if (DATA_SESION.length > 0) {
+            e.preventDefault();
+            // Chrome requiere que returnValue sea seteado
+            e.returnValue = '';
+        }
+    });
+
 </script>
 </body>
 </html>
