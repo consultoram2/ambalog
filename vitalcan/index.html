@@ -20,6 +20,9 @@
         .listening { background-color: #ef4444; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         .ubicacion-activa { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #16a34a !important; }
+        /* Estilo para el input date */
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto">
@@ -88,6 +91,9 @@
             <span class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Cantidad Contada</span>
             <input type="number" id="input-cantidad" value="1" class="text-5xl font-black text-center text-green-700 w-full bg-transparent border-b-4 border-green-200 outline-none mb-4 pb-2">
             
+            <span class="text-[10px] font-bold text-orange-400 uppercase block mb-1 mt-2">Vencimiento (Opcional)</span>
+            <input type="date" id="input-vencimiento" class="text-xl font-bold text-center text-gray-700 w-full bg-transparent border-b-2 border-gray-200 outline-none mb-6 pb-2">
+
             <button onclick="registrar()" class="w-full bg-green-600 text-white py-4 rounded-xl font-black shadow-lg text-lg uppercase transition-all active:scale-95">✅ Registrar</button>
         </div>
     </div>
@@ -289,10 +295,10 @@
             document.getElementById('art-codigo').innerText = art.codigo;
             document.getElementById('art-unixbul').innerText = `1 BULTO = ${art.unixbul} UNIDADES`;
             document.getElementById('input-cantidad').value = "1";
+            document.getElementById('input-vencimiento').value = ""; // Resetea el vencimiento
             document.getElementById('tipo-un').checked = true;
             
             document.getElementById('panel-conteo').classList.remove('hidden');
-            // MODIFICACIÓN: Ahora dicta el código en lugar del nombre
             hablar(art.codigo);
         } else {
             beep(300);
@@ -323,18 +329,23 @@
     function cerrarPanelConteo() {
         document.getElementById('panel-conteo').classList.add('hidden');
         document.getElementById('input-ean').value = "";
+        document.getElementById('input-vencimiento').value = ""; // Resetea el vencimiento al cancelar
         tempArt = null;
     }
 
     function registrar() {
         let cant = parseFloat(document.getElementById('input-cantidad').value);
         let tipo = document.querySelector('input[name="tipo_ingreso"]:checked').value;
+        let venc = document.getElementById('input-vencimiento').value;
         
         if(!ubicacionValidada) return alert("Falta validar la ubicación.");
         if(!tempArt || isNaN(cant) || cant <= 0) return alert("Cantidad inválida.");
 
         let totalUnidades = tipo === 'bulto' ? (cant * tempArt.unixbul) : cant;
         let totalBultos = tipo === 'bulto' ? cant : (cant / tempArt.unixbul);
+        
+        // Formatear fecha para el excel (de YYYY-MM-DD a DD/MM/YYYY) o poner S/D
+        let vencFormat = venc ? venc.split('-').reverse().join('/') : "S/D";
 
         DATA_SESION.unshift({
             "Ubicación": ubicacionValidada,
@@ -342,6 +353,7 @@
             "Descripción": tempArt.nombre,
             "Cantidad Bultos": parseFloat(totalBultos.toFixed(2)),
             "Cantidad Unidades": totalUnidades,
+            "Vencimiento": vencFormat,
             "Fecha/Hora": new Date().toLocaleString()
         });
 
@@ -367,6 +379,7 @@
                     </div>
                     <div class="text-right pl-2">
                         <span class="block font-black text-green-600 text-lg">${d["Cantidad Unidades"]} <span class="text-[9px] text-gray-400">UN</span></span>
+                        ${d["Vencimiento"] !== "S/D" ? `<span class="text-[10px] font-bold text-orange-500 block mt-1">📅 ${d["Vencimiento"]}</span>` : ""}
                     </div>
                 </div>
             </div>
@@ -387,12 +400,14 @@
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Conteo');
         
+        // Se agregó la columna de Vencimiento
         worksheet.columns = [
             { header: 'Ubicación', key: 'Ubicación', width: 20 },
             { header: 'Código Art', key: 'Código Art', width: 15 },
             { header: 'Descripción', key: 'Descripción', width: 45 },
             { header: 'Cantidad Bultos', key: 'Cantidad Bultos', width: 15 },
             { header: 'Cantidad Unidades', key: 'Cantidad Unidades', width: 15 },
+            { header: 'Vencimiento', key: 'Vencimiento', width: 15 },
             { header: 'Fecha/Hora', key: 'Fecha/Hora', width: 22 }
         ];
 
@@ -408,7 +423,7 @@
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
         });
 
-        worksheet.autoFilter = `A1:F${DATA_SESION.length + 1}`;
+        worksheet.autoFilter = `A1:G${DATA_SESION.length + 1}`;
         const totalRowIdx = DATA_SESION.length + 2;
 
         worksheet.getCell(`C${totalRowIdx}`).value = "TOTALES VISIBLES:";
@@ -423,6 +438,7 @@
 
         worksheet.getColumn('D').numFmt = '#,##0.00';
         worksheet.getColumn('E').numFmt = '#,##0';
+        worksheet.getColumn('F').alignment = { horizontal: 'center' };
 
         const fecha = new Date();
         const d = String(fecha.getDate()).padStart(2, '0');
