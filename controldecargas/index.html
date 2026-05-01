@@ -67,7 +67,7 @@
         </div>
     </header>
 
-    <main class="max-w-md mx-auto p-4 space-y-4">
+    <main class="w-full max-w-md mx-auto p-4 space-y-4">
 
         <section id="stepCarga" class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
             <div class="space-y-4">
@@ -89,7 +89,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nro Carga</label>
                     <div class="flex gap-2">
-                        <input type="number" id="nroCarga" placeholder="Ej: 8612" class="flex-1 p-4 bg-slate-50 rounded-2xl text-xl font-bold focus:outline-none">
+                        <input type="number" id="nroCarga" placeholder="Ej: 8612" class="flex-1 min-w-0 w-full p-4 bg-slate-50 rounded-2xl text-xl font-bold focus:outline-none">
                         <button onclick="iniciar()" id="btnIniciar" class="bg-blue-600 text-white px-6 rounded-2xl font-bold">OK</button>
                     </div>
                 </div>
@@ -103,7 +103,7 @@
                     <span id="palletDisplay" class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-black">PALLET N° 1</span>
                 </div>
                 <div class="flex gap-2">
-                    <input type="text" id="barcode" placeholder="SKU o Etiqueta Pallet" class="flex-1 p-4 bg-yellow-50 rounded-2xl font-bold focus:outline-none">
+                    <input type="text" id="barcode" placeholder="SKU o Etiqueta Pallet" class="flex-1 min-w-0 w-full p-4 bg-yellow-50 rounded-2xl font-bold focus:outline-none">
                     <button onclick="buscarArticulo()" class="bg-blue-600 text-white px-4 rounded-2xl font-bold text-sm">OK</button>
                     <button onclick="toggleCamara()" class="bg-slate-800 text-white px-4 rounded-2xl text-xl">📷</button>
                 </div>
@@ -125,7 +125,7 @@
                 </div>
 
                 <div class="flex gap-3 mt-4">
-                    <input type="number" id="cantInput" placeholder="Cant" class="w-1/2 p-4 text-3xl font-black bg-slate-100 rounded-2xl text-center focus:outline-none">
+                    <input type="number" id="cantInput" placeholder="Cant" class="w-1/2 min-w-0 p-4 text-3xl font-black bg-slate-100 rounded-2xl text-center focus:outline-none">
                     <div class="flex flex-col gap-2 flex-1">
                         <button onclick="guardar()" class="flex-1 bg-green-600 text-white rounded-2xl font-black text-lg">REGISTRAR</button>
                     </div>
