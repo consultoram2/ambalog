@@ -708,20 +708,46 @@
                 y += 8;
             });
 
-            const resumenPallets = {};
-            datos.forEach(item => {
-                if ((item.pmph || "").toLowerCase().trim() === "picking") {
-                    let p = String(item.pallet || "-");
-                    if (p !== "-" && p !== "") {
-                        if (!resumenPallets[p]) resumenPallets[p] = { CA: 0, UN: 0 };
-                        if (item.um.includes("CAJA")) resumenPallets[p].CA += item.scan;
-                        else resumenPallets[p].UN += item.scan;
-                    }
-                }
-            });
-            
-            return doc;
-        }
-    </script>
+           const resumenPallets = {};
+            datos.forEach(item => {
+                if ((item.pmph || "").toLowerCase().trim() === "picking") {
+                    let p = String(item.pallet || "-");
+                    if (p !== "-" && p !== "") {
+                        if (!resumenPallets[p]) resumenPallets[p] = { CA: 0, UN: 0 };
+                        if (item.um.includes("CAJA")) resumenPallets[p].CA += item.scan;
+                        else resumenPallets[p].UN += item.scan;
+                    }
+                }
+            });
+
+            // --- ESTO ES LO QUE FALTABA: IMPRIMIR EL RESUMEN EN EL PDF ---
+            y += 10; // Dejamos un margen
+            if (y > 260) { doc.addPage(); y = 20; } // Salto de página si estamos muy abajo
+
+            const palletsKeys = Object.keys(resumenPallets).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            if (palletsKeys.length > 0) {
+                doc.setFont("helvetica", "bold");
+                doc.text("RESUMEN DE PALLETS (PICKING):", 14, y);
+                doc.setFont("helvetica", "normal");
+                y += 8;
+
+                palletsKeys.forEach(p => {
+                    if (y > 275) { doc.addPage(); y = 20; }
+                    let texto = `Pallet N° ${p} = `;
+                    let partes = [];
+                    
+                    // Agrega Cajas o Unidades según corresponda
+                    if (resumenPallets[p].CA > 0) partes.push(`${resumenPallets[p].CA} CA`);
+                    if (resumenPallets[p].UN > 0) partes.push(`${resumenPallets[p].UN} UN`);
+                    
+                    doc.text(texto + partes.join(" + "), 14, y);
+                    y += 7;
+                });
+            }
+
+            return doc;
+        }
+    </script>
 </body>
 </html>
