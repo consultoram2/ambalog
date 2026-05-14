@@ -103,7 +103,8 @@
                     <span id="palletDisplay" class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-black">PALLET N° 1</span>
                 </div>
                 <div class="flex gap-2">
-                    <input type="text" id="barcode" placeholder="SKU o Etiqueta Pallet" class="flex-1 min-w-0 w-full p-4 bg-yellow-50 rounded-2xl font-bold focus:outline-none">
+                    <!-- Evento onkeypress agregado para disparar la busqueda con Enter -->
+                    <input type="text" id="barcode" onkeypress="if(event.key === 'Enter') buscarArticulo()" placeholder="SKU, Etiqueta Pallet o Caja" class="flex-1 min-w-0 w-full p-4 bg-yellow-50 rounded-2xl font-bold focus:outline-none">
                     <button onclick="buscarArticulo()" class="bg-blue-600 text-white px-4 rounded-2xl font-bold text-sm">OK</button>
                     <button onclick="toggleCamara()" class="bg-slate-800 text-white px-4 rounded-2xl text-xl">📷</button>
                 </div>
@@ -127,7 +128,7 @@
                 <div class="flex gap-3 mt-4">
                     <input type="number" id="cantInput" placeholder="Cant" class="w-1/2 min-w-0 p-4 text-3xl font-black bg-slate-100 rounded-2xl text-center focus:outline-none">
                     <div class="flex flex-col gap-2 flex-1">
-                        <button onclick="guardar()" class="flex-1 bg-green-600 text-white rounded-2xl font-black text-lg">REGISTRAR</button>
+                        <button id="btnRegistrar" onclick="guardar()" class="flex-1 bg-green-600 text-white rounded-2xl font-black text-lg transition-colors">REGISTRAR</button>
                     </div>
                 </div>
             </div>
@@ -168,6 +169,7 @@
         let nroPalletActual = 1;
         let html5QrCode = null;
         let bloqueandoSalida = false;
+        let procesandoRegistro = false; // Variable para evitar doble clic
 
         // --- PREVENIR SALIDA ---
         window.addEventListener('beforeunload', function (e) {
@@ -183,7 +185,7 @@
             : null;
 
         let micTimeout = null;
-        const MIC_TIMEOUT_MS = 8000; // auto-apaga en 8 segundos
+        const MIC_TIMEOUT_MS = 8000;
 
         function setBtnVoz(activo) {
             const btn = document.getElementById('btnVozFlotante');
@@ -222,28 +224,18 @@
                 }
             };
 
-            recognition.onerror = () => {
-                pararMic();
-            };
-
-            // onend garantiza que el botón siempre vuelva al estado normal
-            recognition.onend = () => {
-                pararMic();
-            };
+            recognition.onerror = () => { pararMic(); };
+            recognition.onend = () => { pararMic(); };
         }
 
         function activarVoz() {
             if (!recognition) return alert("Voz no soportada en este dispositivo.");
-
-            // No activar si la interfaz está hablando
             if (window.speechSynthesis.speaking) return;
-
-            // No activar si ya está activo
             const btn = document.getElementById('btnVozFlotante');
             if (btn.classList.contains('mic-active')) return;
 
             setBtnVoz(true);
-            btn.disabled = true; // bloquea hasta que arranque
+            btn.disabled = true;
 
             try {
                 recognition.start();
@@ -253,10 +245,7 @@
                 return;
             }
 
-            // Auto-apagado por timeout
-            micTimeout = setTimeout(() => {
-                pararMic();
-            }, MIC_TIMEOUT_MS);
+            micTimeout = setTimeout(() => { pararMic(); }, MIC_TIMEOUT_MS);
         }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -277,15 +266,12 @@
         }
 
         function decir(t) {
-            // Deshabilitar el botón de mic mientras habla
             const btn = document.getElementById('btnVozFlotante');
             if (btn) btn.disabled = true;
-
             const u = new SpeechSynthesisUtterance(t);
             u.lang = 'es-AR';
             u.rate = 0.9;
             u.onend = () => {
-                // Rehabilitar el botón solo si no está en medio de otro speak
                 if (!window.speechSynthesis.speaking && btn) btn.disabled = false;
             };
             window.speechSynthesis.speak(u);
@@ -343,7 +329,6 @@
                     document.getElementById('stepCarga').classList.add('step-hidden');
                     document.getElementById('stepOperacion').classList.remove('step-hidden');
                     document.getElementById('footerApp').classList.remove('step-hidden');
-                    // Mostrar el botón flotante de mic
                     document.getElementById('btnVozFlotante').style.display = 'flex';
                     actualizarContadores();
                 } else { alert(data.msg || "Carga no encontrada"); }
@@ -385,11 +370,22 @@
                     const opcionesUnicas = [];
                     const umsProcesadas = new Set();
 
+                    // MODIFICACIÓN: Separar las opciones por UM y Tipo de carga (Picking vs Pallet Completo)
                     data.opciones.forEach(op => {
-                        if (!umsProcesadas.has(op.um)) {
-                            const filaPendiente = data.opciones.find(f => f.um === op.um && f.scan < f.total);
-                            opcionesUnicas.push(filaPendiente || op);
-                            umsProcesadas.add(op.um);
+                        const tipoCarga = (op.pmph || op.palletType || "").trim();
+                        const key = op.um + (tipoCarga ? " - " + tipoCarga : "");
+
+                        if (!umsProcesadas.has(key)) {
+                            const filaPendiente = data.opciones.find(f => {
+                                const fTipoCarga = (f.pmph || f.palletType || "").trim();
+                                const fKey = f.um + (fTipoCarga ? " - " + fTipoCarga : "");
+                                return fKey === key && f.scan < f.total;
+                            });
+                            
+                            const optionToPush = filaPendiente || op;
+                            optionToPush.displayName = key; // Guardamos el nombre a mostrar (Ej: CAJA - Picking)
+                            opcionesUnicas.push(optionToPush);
+                            umsProcesadas.add(key);
                         }
                     });
 
@@ -401,7 +397,7 @@
                         opcionesUnicas.forEach(op => {
                             const b = document.createElement('button');
                             b.className = "w-full p-4 bg-white border border-blue-200 rounded-2xl font-black text-xl text-center shadow-sm active:bg-blue-100";
-                            b.innerText = op.um;
+                            b.innerText = op.displayName || op.um; // Muestra UM + Tipo de Carga
                             b.onclick = () => prepararRegistro(op, data.cantidadEtiqueta || null);
                             cont.appendChild(b);
                         });
@@ -430,44 +426,71 @@
             } else {
                 decir("Artículo " + item.sku + ", " + item.um);
             }
-            // Línea eliminada para evitar que el teclado se abra solo
         }
 
         async function guardar() {
-            const cant = parseInt(document.getElementById('cantInput').value);
+            // Validación de Doble Clic
+            if (procesandoRegistro) return;
+            
+            const cantInput = document.getElementById('cantInput');
+            const cant = parseInt(cantInput.value);
             if (!cant) return;
-            const finalEscaneado = (selectedItem.actual || 0) + cant;
 
-            if (finalEscaneado > selectedItem.total) {
-                // Detener el micrófono si está activo
-                pararMic();
-                playBeep('err');
-                decir("Error. Supera la carga.");
-                alert("Error: La cantidad supera lo solicitado. Cantidad en carga: " + selectedItem.total);
-                return;
-            }
+            // Bloqueo de UI
+            procesandoRegistro = true;
+            const btnRegistrar = document.getElementById('btnRegistrar');
+            const textoOriginal = btnRegistrar.innerText;
+            btnRegistrar.disabled = true;
+            btnRegistrar.innerText = "⏳ PROCESANDO...";
+            btnRegistrar.classList.remove('bg-green-600');
+            btnRegistrar.classList.add('bg-slate-400');
 
-            const res = await fetch(GOOGLE_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    action: 'registrarCantidad',
-                    nroCarga: currentCarga,
-                    indexFila: selectedItem.index,
-                    nuevaSuma: finalEscaneado,
-                    nroPallet: nroPalletActual
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                playBeep('ok');
-                addHistorial(selectedItem.sku, cant, selectedItem.um, selectedItem.index, finalEscaneado);
+            try {
+                const finalEscaneado = (selectedItem.actual || 0) + cant;
 
-                document.getElementById('secCantidad').classList.add('step-hidden');
-                document.getElementById('barcode').value = '';
-                document.getElementById('cantInput').value = '';
+                if (finalEscaneado > selectedItem.total) {
+                    pararMic();
+                    playBeep('err');
+                    decir("Error. Supera la carga.");
+                    alert("Error: La cantidad supera lo solicitado. Cantidad en carga: " + selectedItem.total);
+                    return; // El finally restaurará el botón
+                }
 
-                document.getElementById('barcode').focus();
-                actualizarContadores();
+                const res = await fetch(GOOGLE_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'registrarCantidad',
+                        nroCarga: currentCarga,
+                        indexFila: selectedItem.index,
+                        nuevaSuma: finalEscaneado,
+                        nroPallet: nroPalletActual
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    playBeep('ok');
+                    addHistorial(selectedItem.sku, cant, selectedItem.um, selectedItem.index, finalEscaneado);
+
+                    document.getElementById('secCantidad').classList.add('step-hidden');
+                    document.getElementById('barcode').value = '';
+                    cantInput.value = '';
+
+                    document.getElementById('barcode').focus();
+                    actualizarContadores();
+                } else {
+                    alert(data.msg || "Error al registrar");
+                }
+            } catch (err) {
+                alert("Error de conexión al guardar los datos.");
+            } finally {
+                // Desbloqueo de UI
+                procesandoRegistro = false;
+                btnRegistrar.disabled = false;
+                btnRegistrar.innerText = textoOriginal;
+                btnRegistrar.classList.remove('bg-slate-400');
+                btnRegistrar.classList.add('bg-green-600');
             }
         }
 
@@ -544,8 +567,6 @@
                 const bgColor = esCorrecto ? 'bg-green-100 border-green-300' : 'bg-red-100 border-red-300';
                 const textColor = esCorrecto ? 'text-green-800' : 'text-red-800';
                 d.className = `p-3 rounded-xl border mb-2 text-xs shadow-sm ${bgColor} ${textColor}`;
-                
-                // Reemplaza la línea de d.innerHTML por este bloque:
                 d.innerHTML = `
                     <div class="flex justify-between items-start mb-1 gap-2">
                         <div>
@@ -556,7 +577,6 @@
                     </div>
                     <div class="mt-1">${i.um}: <b>${i.scan}</b> de ${i.total}</div>
                 `;
-                
                 list.appendChild(d);
             });
         }
@@ -679,7 +699,6 @@
                 doc.text(String(item.total), 110, y);
                 doc.text(String(item.scan), 130, y);
 
-                // Si es "pallet completo", no mostrar número de pallet
                 const mostrarPallet = (item.palletType || "").toLowerCase().trim() !== "pallet completo"
                     ? String(item.pallet || "-")
                     : "";
@@ -700,35 +719,7 @@
                     }
                 }
             });
-
-            const keys = Object.keys(resumenPallets).sort((a,b) => parseInt(a)-parseInt(b));
-            if (keys.length > 0) {
-                y += 5;
-                if (y > 250) { doc.addPage(); y = 20; }
-                doc.setFont("helvetica", "bold");
-                doc.text("RESUMEN DE PALLETS (PICKING):", 14, y);
-                y += 7;
-                doc.setFont("helvetica", "normal");
-                keys.forEach(p => {
-                    let txt = `Pallet N° ${p} = `;
-                    let partes = [];
-                    if (resumenPallets[p].CA > 0) partes.push(`${resumenPallets[p].CA} CA`);
-                    if (resumenPallets[p].UN > 0) partes.push(`${resumenPallets[p].UN} UN`);
-                    doc.text(txt + partes.join(" / "), 14, y);
-                    y += 6;
-                });
-            }
-
-            const pageCount = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.setTextColor(150);
-                doc.setFont("helvetica", "normal");
-                doc.text("Desarrollo creado por M2 Consultoria Digital", 14, 287);
-                doc.text(`${i} / ${pageCount}`, 200, 287, { align: "right" });
-            }
-
+            
             return doc;
         }
     </script>
